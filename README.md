@@ -3,6 +3,10 @@ Example of a firebase application wih services: Hosting, Cloud Services, and Rea
 
 ## Useful commands
 
+```
+npm install -g firebase-tools
+```
+
 ```bash
 # login in google to connect your project to remote Firebase services
 firebase login
