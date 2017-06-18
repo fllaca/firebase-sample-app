@@ -13,6 +13,11 @@ firebase login
 ```
 
 ```bash
+# Connect to one of your projects in the Firebase services
+firebase use --add
+```
+
+```bash
 # deploy in firebase the changes
 firebase deploy
 ```
