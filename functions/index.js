@@ -31,8 +31,7 @@ app.post('/api/users', (req, res) => {
   newUserRef.set(newUserData);
 
   // send response back
-  res.status = 201;
-  res.send(newUserData)
+  res.status(201).send(newUserData)
 });
 
 app.get('/api/users/:id', (req, res) => {  
@@ -42,18 +41,15 @@ app.get('/api/users/:id', (req, res) => {
   userRef.once('value', function(value){
     let result = value.val() 
     
-    if (result != null) {
-      res.status = 200;  
-      res.send(result);
-    } else {
-      res.status = 404;  
-      res.send(null);
+    if (result) {
+      res.status(200).send(result);
+    } else {  
+      res.status(404).send({ message: "Not Found" });
     }
     
   }, function(error) {
     console.log(error)
-    res.status = 500;
-    res.send({ msg: "Unknown Error"});
+    res.status(500).send({ message: "Unknown Error" });
 
   })
 });
