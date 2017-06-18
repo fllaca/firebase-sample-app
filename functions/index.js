@@ -20,6 +20,27 @@ app.get('/api/', (req, res) => {
   res.send(`Root API page`);
 });
 
+app.get('/api/users', (req, res) => {  
+  usersRef.once('value', function(data) {
+    if (data.val()) {
+
+      let result = [];
+
+      data.forEach(function(item) {
+        result.push(item.val());
+      });
+
+      res.status(200).send(result)
+    } else {
+      res.status(200).send([])
+    }
+  }, function(error) {
+    console.log(error)
+    res.status(500).send({ message: "Unknown Error" });
+
+  });
+});
+
 app.post('/api/users', (req, res) => {  
   let newUserData = req.body;
   
