@@ -7,7 +7,8 @@
 
     // Add the following rewrites section *within* "hosting"
     "rewrites": [ {
-      "source": "/rest/helloWorld", "function": "helloWorld"
+      "source": "/api/**", 
+      "function": "api"
     }]
   }
 }

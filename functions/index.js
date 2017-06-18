@@ -8,25 +8,55 @@ var db = admin.database();
 
 var ref = db.ref("/test/sample/data");
 
-// // Create and Deploy Your First Cloud Functions
-// // https://firebase.google.com/docs/functions/write-firebase-functions
-//
-exports.helloWorld = functions.https.onRequest((request, response) => {
+// this "ref" points to the user list in our database
+var usersRef = ref.child("users");
 
-  var message = "ERROR :(";
 
-  if (request.method == "POST") {
+const app = require('express')();
 
-    var usersRef = ref.child("users");
-
-    var newItem = usersRef.push({foo: 'bar'});
-
-    console.log("CREATED: " + newItem.key);
-
-    message = "Writing: SUCCESS!!"
-  }  else {
-    message = "Reading: SUCCESS!!"
-  }
-
-  response.send(message);
+app.get('/api/', (req, res) => {  
+  res.send(`Root API page`);
 });
+
+app.post('/api/users', (req, res) => {  
+  let newUserData = req.body;
+  
+  // create a new elemente in "users" collection in database  
+  var newUserRef = usersRef.push();
+
+  // add the generated key to the object as "id"
+  newUserData.id = newUserRef.key;
+  
+  // store the json object in the ref created before
+  newUserRef.set(newUserData);
+
+  // send response back
+  res.status = 201;
+  res.send(newUserData)
+});
+
+app.get('/api/users/:id', (req, res) => {  
+
+  let userRef = usersRef.child(`${req.params.id}`);
+
+  userRef.once('value', function(value){
+    let result = value.val() 
+    
+    if (result != null) {
+      res.status = 200;  
+      res.send(result);
+    } else {
+      res.status = 404;  
+      res.send(null);
+    }
+    
+  }, function(error) {
+    console.log(error)
+    res.status = 500;
+    res.send({ msg: "Unknown Error"});
+
+  })
+});
+
+// publish the function:
+exports.api = functions.https.onRequest(app); 
