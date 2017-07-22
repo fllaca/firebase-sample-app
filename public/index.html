@@ -16,6 +16,99 @@
       <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
+
+    <!-- used For Google's Sign In -->
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <meta name="google-signin-client_id" content="500278276705-qhnemg2e5j4ejuggpm9n13dgl5acvt1c.apps.googleusercontent.com">
+
+    <!-- use Google APIs 
+    <script src="https://apis.google.com/js/api.js"></script>
+    -->
+
+    <!-- Enable Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/4.1.3/firebase.js"></script>
+    <script>
+      // Initialize Firebase
+      // TODO: Replace with your project's customized code snippet
+      var config = {
+        apiKey: "AIzaSyB1zJOHXqLKH8UDhoC5zBDmAfxC--gw630",
+        authDomain: "users-sample-app.firebaseapp.com",
+        databaseURL: "https://users-sample-app.firebaseio.com",
+        storageBucket: "users-sample-app.appspot.com",
+        //messagingSenderId: "<SENDER_ID>",
+      };
+      firebase.initializeApp(config);
+
+
+      function onSignIn(googleUser) {
+        console.log('Google Auth Response', googleUser);
+        // We need to register an Observer on Firebase Auth to make sure auth is initialized.
+        var unsubscribe = firebase.auth().onAuthStateChanged(function(firebaseUser) {
+          unsubscribe();
+          // Check if we are already signed-in Firebase with the correct user.
+          if (!isUserEqual(googleUser, firebaseUser)) {
+            // Build Firebase credential with the Google ID token.
+            var credential = firebase.auth.GoogleAuthProvider.credential(
+                googleUser.getAuthResponse().id_token);
+            // Sign in with credential from the Google user.
+            firebase.auth().signInWithCredential(credential).catch(function(error) {
+              // Handle Errors here.
+              var errorCode = error.code;
+              var errorMessage = error.message;
+              // The email of the user's account used.
+              var email = error.email;
+              // The firebase.auth.AuthCredential type that was used.
+              var credential = error.credential;
+              // ...
+            });
+          } else {
+            console.log('User already signed-in Firebase.');
+            console.log(googleUser.getBasicProfile().getEmail());
+
+            firebase.auth().currentUser.getIdToken().then(function(token) {
+              console.log("Authenticated!")
+              loadUsers(token)
+            });
+          }
+        });
+      }
+
+      function isUserEqual(googleUser, firebaseUser) {
+        if (firebaseUser) {
+          var providerData = firebaseUser.providerData;
+          for (var i = 0; i < providerData.length; i++) {
+            if (providerData[i].providerId === firebase.auth.GoogleAuthProvider.PROVIDER_ID &&
+                providerData[i].uid === googleUser.getBasicProfile().getId()) {
+              // We don't need to reauth the Firebase connection.
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
+
+
+      /*
+      auth2 = gapi.auth2.init();
+
+      // Profile information
+      if (auth2.isSignedIn.get()) {
+        var profile = auth2.currentUser.get().getBasicProfile();
+        console.log('ID: ' + profile.getId());
+        console.log('Full Name: ' + profile.getName());
+        console.log('Given Name: ' + profile.getGivenName());
+        console.log('Family Name: ' + profile.getFamilyName());
+        console.log('Image URL: ' + profile.getImageUrl());
+        console.log('Email: ' + profile.getEmail());
+      }
+      */
+
+
+    </script>
+
+     
+
   </head>
   <body>
 
@@ -25,6 +118,9 @@
         <h1>User Points Firebase App</h1>
         <p class="lead">This an example web application with <a href="https://firebase.google.com/">Firebase</a> <br> 
         Add users and their points: the data will be stored in <a href="https://firebase.google.com/docs/database/"> Firebase's Realtime Database</a> </p>
+
+        <div class="g-signin2" data-onsuccess="onSignIn"></div>
+
       </div>
 
       <ul id="user-list" class="list-group">
@@ -41,7 +137,7 @@
           <label class="sr-only" for="new-user-points">User Points</label>
           <input type="number" class="form-control" id="new-user-points" placeholder="User Points">
         </div>
-        <button type="submit" class="btn btn-primary">Save User</button>
+        <button id="save-button" type="submit" class="btn btn-primary">Save User</button>
       </form> 
 
     </div><!-- /.container -->
@@ -56,13 +152,19 @@
 
     <script>
 
-      function loadUsers() {
+      function loadUsers(token) {
+        
+        if (!token) return;
+
         var userList = $('#user-list');
 
         userList.empty();
 
         $.ajax({
           url: "/api/users",
+          headers: {
+              "Authorization":"Bearer " + token
+          },
           success: function(users) {
             users.forEach(function(user) {
               userList.append('<li class="list-group-item">' + user.name + ' <span class="badge">'+ user.points +'</span></li>');
@@ -71,10 +173,14 @@
         });
       }
 
-      function saveUser() {
+      function saveUser(token) {
+        console.log("going to save with token...")
         $.ajax({
           url: "/api/users",
           type: "POST",
+          headers: {
+              "Authorization":"Bearer " + token
+          },
           data: {
             name: $('#new-user-name').val(),
             points: $('#new-user-points').val()
@@ -82,17 +188,22 @@
           success: function(newUser) {
             $('#new-user-name').val('')
             $('#new-user-points').val('')
-            loadUsers();
+            loadUsers(token);
           }
+        });
+      }
+
+      function saveUserWithAuthentication() {
+        firebase.auth().currentUser.getIdToken().then(function(token) {
+          saveUser(token)
         });
       }
 
       // this is the id of the form
       $("#new-user-form").submit(function(e) {
 
-        saveUser();  
-
         e.preventDefault(); // avoid to execute the actual submit of the form.
+        saveUserWithAuthentication();  
       });
 
       loadUsers();
